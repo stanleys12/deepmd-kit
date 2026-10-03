@@ -54,11 +54,14 @@ def test_descriptor_config_warning_reports_nested_difference(monkeypatch, caplog
         "type": "dpa3",
         "repflow": {"nlayers": 6, "rcut": 6.0},
         "trainable": False,
+        "seed": None,
+        "use_amp": True,
     }
     pretrained_descriptor = {
         "type": "dpa3",
         "repflow": {"nlayers": 16, "rcut": 6.0},
         "trainable": True,
+        "seed": 42,
     }
 
     with caplog.at_level(logging.WARNING):
@@ -70,6 +73,22 @@ def test_descriptor_config_warning_reports_nested_difference(monkeypatch, caplog
     assert "repflow.nlayers" in caplog.text
     assert "input=6, pretrained=16" in caplog.text
     assert "trainable" not in caplog.text
+    assert "seed" not in caplog.text
+    assert "use_amp" not in caplog.text
+
+
+def test_descriptor_config_warning_ignores_seed_and_use_amp(caplog):
+    with caplog.at_level(logging.WARNING):
+        finetune.warn_configuration_mismatch_during_finetune(
+            {"type": "se_e2_a", "sel": [16, 16], "rcut": 6.0, "seed": None},
+            {"type": "se_e2_a", "sel": [16, 16], "rcut": 6.0, "seed": 42},
+        )
+        finetune.warn_configuration_mismatch_during_finetune(
+            {"type": "dpa3", "repflow": {"nlayers": 6}, "use_amp": True},
+            {"type": "dpa3", "repflow": {"nlayers": 6}, "use_amp": False},
+        )
+
+    assert caplog.text == ""
 
 
 def test_descriptor_config_warning_skips_default_only_difference(caplog):
